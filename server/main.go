@@ -1,60 +1,91 @@
-// AnyLink 是一个企业级远程办公vpn软件，可以支持多人同时在线使用。
-
-//go:build !windows
-// +build !windows
-
 package main
 
 import (
-	"embed"
+	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/bjdgyc/anylink/admin"
-	"github.com/bjdgyc/anylink/base"
-	"github.com/bjdgyc/anylink/handler"
+	"github.com/sirupsen/logrus"
 )
 
-//go:embed ui
-var uiData embed.FS
-
-// 程序版本
 var (
-	appVer    string
-	commitId  string
-	buildDate string
+	// Version is set at build time via ldflags
+	Version = "dev"
+	// BuildDate is set at build time via ldflags
+	BuildDate = "unknown"
 )
 
 func main() {
-	admin.UiData = uiData
-	base.APP_VER = appVer
-	base.CommitId = commitId
-	base.BuildDate = buildDate
+	var (
+		confFile  string
+		showVer   bool
+		setPasswd bool
+	)
 
-	base.Start()
-	handler.Start()
+	flag.StringVar(&confFile, "conf", "conf/server.toml", "config file path")
+	flag.BoolVar(&showVer, "version", false, "show version info")
+	flag.BoolVar(&setPasswd, "passwd", false, "set admin password")
+	flag.Parse()
 
-	signalWatch()
-}
+	if showVer {
+		fmt.Printf("AnyLink Server\n")
+		fmt.Printf("Version:    %s\n", Version)
+		fmt.Printf("BuildDate:  %s\n", BuildDate)
+		os.Exit(0)
+	}
 
-func signalWatch() {
-	base.Info("Server pid: ", os.Getpid())
+	// Initialize logger
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+	})
+	logrus.SetLevel(logrus.InfoLevel)
 
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGALRM, syscall.SIGUSR2)
-	for {
-		sig := <-sigs
-		base.Info("Get signal:", sig)
-		switch sig {
-		case syscall.SIGUSR2:
-			// reload
-			base.Info("Reload")
-		default:
-			// stop
-			base.Info("Stop")
-			handler.Stop()
-			return
+	logrus.Infof("Starting AnyLink Server version %s", Version)
+
+	// Load configuration
+	cfg, err := initConfig(confFile)
+	if err != nil {
+		logrus.Fatalf("Failed to load config: %v", err)
+	}
+
+	if cfg.LogLevel != "" {
+		lvl, err := logrus.ParseLevel(cfg.LogLevel)
+		if err == nil {
+			logrus.SetLevel(lvl)
 		}
 	}
+
+	// Handle admin password setup mode
+	if setPasswd {
+		if err := adminSetPassword(cfg); err != nil {
+			logrus.Fatalf("Failed to set admin password: %v", err)
+		}
+		logrus.Info("Admin password updated successfully")
+		os.Exit(0)
+	}
+
+	// Start the server
+	srv, err := newServer(cfg)
+	if err != nil {
+		logrus.Fatalf("Failed to initialize server: %v", err)
+	}
+
+	if err := srv.Start(); err != nil {
+		logrus.Fatalf("Failed to start server: %v", err)
+	}
+
+	// Wait for termination signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	logrus.Infof("Received signal %s, shutting down...", sig)
+
+	if err := srv.Stop(); err != nil {
+		logrus.Errorf("Error during shutdown: %v", err)
+	}
+
+	logrus.Info("AnyLink Server stopped")
 }
