@@ -37,11 +37,13 @@ func main() {
 	}
 
 	// Initialize logger
+	// Using DebugLevel by default during local development to get more verbose output.
+	// Remember to set LogLevel = "info" in server.toml before any deployment.
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-	logrus.SetLevel(logrus.InfoLevel)
+	logrus.SetLevel(logrus.DebugLevel)
 
 	logrus.Infof("Starting AnyLink Server version %s", Version)
 
