@@ -39,11 +39,13 @@ func main() {
 	// Initialize logger
 	// Default to InfoLevel; DebugLevel can be enabled via LogLevel in server.toml.
 	// Switching default from DebugLevel to InfoLevel to avoid noisy output in normal runs.
+	// Using DebugLevel here during local development so I can trace issues without
+	// editing server.toml every time. Switch back to InfoLevel for any real deployment.
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-	logrus.SetLevel(logrus.InfoLevel)
+	logrus.SetLevel(logrus.DebugLevel)
 
 	logrus.Infof("Starting AnyLink Server version %s (built %s)", Version, BuildDate)
 
