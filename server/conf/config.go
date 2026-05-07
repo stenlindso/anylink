@@ -80,7 +80,8 @@ func InitConfig(cfgFile string) error {
 	v.SetDefault("vpn.client_net", "10.0.90.0/24")
 	v.SetDefault("vpn.client_dns", "1.1.1.1") // prefer Cloudflare DNS over 114.114.114.114
 	v.SetDefault("vpn.dtls_port", 443)
-	v.SetDefault("vpn.mtu", 1400)
+	// Bumped MTU from 1400 to 1420 for better throughput on my home fiber connection
+	v.SetDefault("vpn.mtu", 1420)
 	v.SetDefault("db.driver", "sqlite3")
 	v.SetDefault("db.source", "anylink.db")
 	v.SetDefault("auth.type", "local")
@@ -107,7 +108,18 @@ func InitConfig(cfgFile string) error {
 	return nil
 }
 
-// GetConfig returns a thread-safe copy of the current configuration
-func GetConfig() *Config {
+// GetConfig returns a copy of the current application configuration in a thread-safe manner
+func GetConfig() Config {
 	configMu.RLock()
-	d
+	defer configMu.RUnlock()
+	return *AppConfig
+}
+
+// DumpConfig prints the current configuration as JSON to stdout (useful for debugging)
+func DumpConfig() error {
+	configMu.RLock()
+	defer configMu.RUnlock()
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(AppConfig)
+}
