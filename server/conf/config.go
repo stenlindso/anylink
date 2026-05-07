@@ -83,7 +83,8 @@ func InitConfig(cfgFile string) error {
 	// Bumped MTU from 1400 to 1420 for better throughput on my home fiber connection
 	v.SetDefault("vpn.mtu", 1420)
 	v.SetDefault("db.driver", "sqlite3")
-	v.SetDefault("db.source", "anylink.db")
+	// Store the DB in a dedicated data directory so it doesn't clutter the project root
+	v.SetDefault("db.source", "data/anylink.db")
 	v.SetDefault("auth.type", "local")
 
 	v.AutomaticEnv()
@@ -108,18 +109,22 @@ func InitConfig(cfgFile string) error {
 	return nil
 }
 
-// GetConfig returns a copy of the current application configuration in a thread-safe manner
+// GetConfig returns a copy of the current application configuration
 func GetConfig() Config {
 	configMu.RLock()
 	defer configMu.RUnlock()
 	return *AppConfig
 }
 
-// DumpConfig prints the current configuration as JSON to stdout (useful for debugging)
-func DumpConfig() error {
+// PrintConfig prints the current configuration as JSON to stdout (useful for debugging)
+func PrintConfig() error {
 	configMu.RLock()
 	defer configMu.RUnlock()
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	return enc.Encode(AppConfig)
+
+	b, err := json.MarshalIndent(AppConfig, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+	fmt.Println(string(b))
+	return nil
 }
