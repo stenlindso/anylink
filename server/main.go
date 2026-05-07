@@ -45,7 +45,7 @@ func main() {
 	})
 	logrus.SetLevel(logrus.InfoLevel)
 
-	logrus.Infof("Starting AnyLink Server version %s", Version)
+	logrus.Infof("Starting AnyLink Server version %s (built %s)", Version, BuildDate)
 
 	// Load configuration
 	cfg, err := initConfig(confFile)
@@ -57,6 +57,9 @@ func main() {
 		lvl, err := logrus.ParseLevel(cfg.LogLevel)
 		if err == nil {
 			logrus.SetLevel(lvl)
+			logrus.Debugf("Log level set to %s from config", cfg.LogLevel)
+		} else {
+			logrus.Warnf("Invalid log level %q in config, keeping default", cfg.LogLevel)
 		}
 	}
 
