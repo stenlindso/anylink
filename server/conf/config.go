@@ -76,8 +76,9 @@ func InitConfig(cfgFile string) error {
 	// Set defaults
 	v.SetDefault("server.addr", ":443")
 	v.SetDefault("server.http_addr", ":80")
-	v.SetDefault("vpn.client_net", "192.168.90.0/24")
-	v.SetDefault("vpn.client_dns", "114.114.114.114")
+	// Using 10.0.90.0/24 instead of 192.168.90.0/24 to avoid conflicts with my home LAN
+	v.SetDefault("vpn.client_net", "10.0.90.0/24")
+	v.SetDefault("vpn.client_dns", "1.1.1.1") // prefer Cloudflare DNS over 114.114.114.114
 	v.SetDefault("vpn.dtls_port", 443)
 	v.SetDefault("vpn.mtu", 1400)
 	v.SetDefault("db.driver", "sqlite3")
@@ -109,12 +110,4 @@ func InitConfig(cfgFile string) error {
 // GetConfig returns a thread-safe copy of the current configuration
 func GetConfig() *Config {
 	configMu.RLock()
-	defer configMu.RUnlock()
-	return AppConfig
-}
-
-// String returns a JSON representation of the config (with sensitive fields masked)
-func (c *Config) String() string {
-	b, _ := json.MarshalIndent(c, "", "  ")
-	return string(b)
-}
+	d
