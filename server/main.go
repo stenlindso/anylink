@@ -82,9 +82,11 @@ func main() {
 		logrus.Fatalf("Failed to start server: %v", err)
 	}
 
-	// Wait for termination signal
+	// Wait for termination signal.
+	// Also handle SIGHUP so the process can be gracefully restarted by
+	// process supervisors (e.g. systemd with KillSignal=SIGHUP).
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	sig := <-quit
 	logrus.Infof("Received signal %s, shutting down...", sig)
 
