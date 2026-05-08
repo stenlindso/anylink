@@ -39,9 +39,13 @@ func main() {
 	// Initialize logger
 	// Default to InfoLevel; DebugLevel can be enabled via LogLevel in server.toml.
 	// Switching default from DebugLevel to InfoLevel to avoid noisy output in normal runs.
+	//
+	// Personal note: using RFC3339 timestamp format instead of the original
+	// "2006-01-02 15:04:05" so log entries are easier to parse with external
+	// tools (e.g. journalctl, grep, jq-based pipelines).
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
+		TimestampFormat: "2006-01-02T15:04:05Z07:00",
 	})
 	logrus.SetLevel(logrus.InfoLevel)
 
