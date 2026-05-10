@@ -43,9 +43,13 @@ func main() {
 	// Personal note: using RFC3339 timestamp format instead of the original
 	// "2006-01-02 15:04:05" so log entries are easier to parse with external
 	// tools (e.g. journalctl, grep, jq-based pipelines).
+	//
+	// Also enabling DisableColors so that log files written via stdout redirect
+	// don't contain ANSI escape codes, which makes grepping much cleaner.
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02T15:04:05Z07:00",
+		DisableColors:   true,
 	})
 	logrus.SetLevel(logrus.InfoLevel)
 
